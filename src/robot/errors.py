@@ -293,6 +293,8 @@ class ContinueForLoop(ExecutionPassed):
 class ExitForLoop(ExecutionPassed):
     """Used by 'Exit For Loop' keyword."""
 
+class ExitIfBlock(ExecutionPassed):
+    """Used by 'Exit If Block' keyword."""
 
 class ReturnFromKeyword(ExecutionPassed):
     """Used by 'Return From Keyword' keyword."""

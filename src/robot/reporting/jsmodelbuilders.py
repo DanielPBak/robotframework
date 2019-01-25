@@ -120,7 +120,7 @@ class TestBuilder(_Builder):
 
 
 class KeywordBuilder(_Builder):
-    _types = {'kw': 0, 'setup': 1, 'teardown': 2, 'for': 3, 'foritem': 4}
+    _types = {'kw': 0, 'setup': 1, 'teardown': 2, 'for': 3, 'foritem': 4, 'if': 5}
 
     def __init__(self, context):
         _Builder.__init__(self, context)
@@ -129,6 +129,7 @@ class KeywordBuilder(_Builder):
 
     def build(self, kw, split=False):
         with self._context.prune_input(kw.messages, kw.keywords):
+            print(kw.type)
             return (self._types[kw.type],
                     self._string(kw.kwname, attr=True),
                     self._string(kw.libname, attr=True),

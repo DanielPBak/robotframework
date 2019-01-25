@@ -14,12 +14,13 @@
 #  limitations under the License.
 
 from robot.errors import (ExecutionFailed, ExecutionFailures, ExecutionPassed,
-                          ExitForLoop, ContinueForLoop, DataError)
+                          ExitForLoop, ContinueForLoop, DataError, ExitIfBlock)
 from robot.result import Keyword as KeywordResult
 from robot.utils import (format_assign_message, frange, get_error_message,
                          is_list_like, is_number, plural_or_not as s, type_name)
 from robot.variables import is_scalar_var
-
+from robot.running.arguments import ArgumentSpec
+from robot.running.arguments.argumentresolver import ArgumentResolver
 from .statusreporter import StatusReporter
 
 
@@ -32,6 +33,7 @@ class StepRunner(object):
     def run_steps(self, steps):
         errors = []
         for step in steps:
+
             try:
                 self.run_step(step)
             except ExecutionPassed as exception:
@@ -50,6 +52,9 @@ class StepRunner(object):
         context = self._context
         if step.type == step.FOR_LOOP_TYPE:
             runner = ForRunner(context, self._templated, step.flavor)
+            return runner.run(step)
+        elif step.type == step.IF_BLOCK_TYPE:
+            runner = IfBlockRunner(context, self._templated)
             return runner.run(step)
         runner = context.get_runner(name or step.name)
         if context.dry_run:
@@ -74,6 +79,7 @@ class ForInRunner(object):
     def __init__(self, context, templated=False):
         self._context = context
         self._templated = templated
+        spec = ArgumentSpec
 
     def run(self, data, name=None):
         result = KeywordResult(kwname=self._get_name(data),
@@ -270,3 +276,73 @@ class InvalidForRunner(ForInRunner):
         raise DataError("Invalid FOR loop type '%s'. Expected 'IN', "
                         "'IN RANGE', 'IN ZIP', or 'IN ENUMERATE'."
                         % self.flavor)
+
+
+class IfBlockRunner(object):
+    def __init__(self, context, templated=False):
+
+        self._context = context
+        self._templated = templated
+        self._spec = ArgumentSpec(name='IF', type='IF', positional=['condition'])
+        self._argument_resolver = ArgumentResolver(self._spec)
+
+    def run(self, data, name=None):
+        import pdb
+        pdb.set_trace()
+        result = KeywordResult(kwname=self._get_name(data),
+                               type=data.IF_BLOCK_TYPE)
+        with StatusReporter(self._context, result):
+            self._validate(data)
+            self._run(data, self._context)
+
+
+    def _get_name(self, data):
+        return 'IF {}'.format(data.condition)
+
+    def _validate(self, data):
+
+        if not data.keywords:
+            raise DataError('IF block contains no keywords.')
+
+    def _run(self, data, context):
+        import pdb
+        pdb.set_trace()
+
+        from robot.api import logger
+        condition = data.condition
+        positional, named = self._argument_resolver.resolve((condition,), self._context.variables)
+        return False
+        logger.error(condition)
+        logger.error(evaluation)
+        if not evaluation:
+            return
+        errors = []
+        try:
+            from robot.api import logger
+            logger.error('running block')
+            self._run_block(data)
+        except ExitIfBlock as exception:
+            if exception.earlier_failures:
+                errors.extend(exception.earlier_failures.get_errors())
+        except ExecutionPassed as exception:
+            exception.set_earlier_failures(errors)
+            raise exception
+        except ExecutionFailed as exception:
+            errors.extend(exception.get_errors())
+            if not exception.can_continue(self._context.in_teardown,
+                                          self._templated,
+                                          self._context.dry_run):
+                raise exception
+        if errors:
+            raise ExecutionFailures(errors)
+
+    def _run_block(self, data):
+        name = self._get_name(data)
+        result = KeywordResult(kwname=name,
+                               type=data.FOR_ITEM_TYPE)
+        runner = StepRunner(self._context, self._templated)
+        with StatusReporter(self._context, result):
+            runner.run_steps(data.keywords)
+
+    def _transform_items(self, items):
+        return items

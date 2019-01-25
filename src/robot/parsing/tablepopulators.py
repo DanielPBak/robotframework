@@ -176,6 +176,43 @@ class ForLoopPopulator(Populator):
         self._populator.populate()
 
 
+class IfBlockPopulator(Populator):
+
+    def __init__(self, if_block_creator):
+        self._if_block_creator = if_block_creator
+        self._block = None
+        self._populator = NullPopulator()
+        self._declaration = []
+        self._declaration_comments = []
+
+    def add(self, row):
+        dedented_row = row.dedent()
+        if not self._block:
+            declaration_ready = self._populate_declaration(row)
+            if not declaration_ready:
+                return
+            self._create_if_block()
+        if not row.is_continuing():
+            self._populator.populate()
+            self._populator = StepPopulator(self._block.add_step)
+        self._populator.add(dedented_row)
+
+    def _populate_declaration(self, row):
+        if row.starts_if_block() or row.is_continuing():
+            self._declaration.extend(row.dedent().data)
+            self._declaration_comments.extend(row.comments)
+            return False
+        return True
+
+    def _create_if_block(self):
+        self._block = self._if_block_creator(self._declaration,
+                                            self._declaration_comments)
+
+    def populate(self):
+        if not self._block:
+            self._create_if_block()
+        self._populator.populate()
+
 class _TestCaseUserKeywordPopulator(Populator):
 
     def __init__(self, test_or_uk_creator):
@@ -196,15 +233,18 @@ class _TestCaseUserKeywordPopulator(Populator):
 
     def _handle_data_row(self, row):
         ending_for_loop = False
+        ending_if_block = False
         if not self._continues(row):
             self._populator.populate()
             if row.all == ['END']:
                 ending_for_loop = self._end_for_loop()
+            if row.all == ['ENDIF']:
+                ending_if_block = self._end_if_block()
             self._populator = self._get_populator(row)
             self._comment_cache.consume_with(self._populate_comment_row)
         else:
             self._comment_cache.consume_with(self._populator.add)
-        if not ending_for_loop:
+        if not (ending_for_loop or ending_if_block):
             self._populator.add(row)
 
     def _end_for_loop(self):
@@ -212,8 +252,16 @@ class _TestCaseUserKeywordPopulator(Populator):
             return True
         return self._test_or_uk.end_for_loop()
 
+    def _end_if_block(self):
+        if self._populating_if_block():
+            return True
+        return self._test_or_uk.end_if_block()
+
     def _populating_for_loop(self):
         return isinstance(self._populator, ForLoopPopulator)
+
+    def _populating_if_block(self):
+        return isinstance(self._populator, IfBlockPopulator)
 
     def _continues(self, row):
         return (row.is_continuing() and self._populator or
@@ -238,6 +286,8 @@ class _TestCaseUserKeywordPopulator(Populator):
             return SettingPopulator(setter)
         if row.starts_for_loop():
             return ForLoopPopulator(self._test_or_uk.add_for_loop)
+        if row.starts_if_block():
+            return IfBlockPopulator(self._test_or_uk.add_if_block)
         return StepPopulator(self._test_or_uk.add_step)
 
     def _setting_setter(self, row):

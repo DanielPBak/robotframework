@@ -67,6 +67,8 @@ class LibraryKeywordRunner(object):
                              type=kw.type)
 
     def _run(self, context, args):
+        import pdb
+        pdb.set_trace()
         if self.pre_run_messages:
             for message in self.pre_run_messages:
                 context.output.message(message)

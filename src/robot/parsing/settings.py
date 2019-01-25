@@ -66,6 +66,9 @@ class Setting(object):
     def is_for_loop(self):
         return False
 
+    def is_if_block(self):
+        return False
+
     def report_invalid_syntax(self, message, level='ERROR'):
         self.parent.report_invalid_syntax(message, level)
 

@@ -74,6 +74,12 @@ class DataRow(object):
             return head.replace(':', '').replace(' ', '').upper() == 'FOR'
         return head == 'FOR'
 
+    def starts_if_block(self):
+        head = self.head
+        if head.startswith(':'):
+            return head.replace(':', '').replace(' ', '').upper() == 'IF'
+        return head == 'IF'
+
     def starts_test_or_user_keyword_setting(self):
         head = self.head
         return head and head[0] == '[' and head[-1] == ']'

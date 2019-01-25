@@ -1668,6 +1668,11 @@ class _RunKeyword(_BuiltInBase):
 
     @run_keyword_variant(resolve=2)
     def run_keyword_if(self, condition, name, *args):
+        from robot.api import logger
+        logger.error('rki')
+        logger.error(condition)
+        import pdb
+        pdb.set_trace()
         """Runs the given keyword with the given arguments, if ``condition`` is true.
 
         The given ``condition`` is evaluated in Python as explained in
@@ -2954,10 +2959,18 @@ class _Misc(_BuiltInBase):
         | ${random} = <random integer>
         | ${result} = 42
         """
+        from robot.api import logger
+        logger.error('evaluate')
+        logger.error(expression)
+        logger.error(is_string(expression))
+
         if is_string(expression) and '$' in expression:
             expression, variables = self._handle_variables_in_expression(expression)
         else:
             variables = {}
+        logger.error(expression)
+        logger.error(variables)
+        logger.error('evaluate')
         namespace = self._create_evaluation_namespace(namespace, modules)
         try:
             if not is_string(expression):
@@ -2971,6 +2984,8 @@ class _Misc(_BuiltInBase):
                                % (expression, get_error_message()))
 
     def _handle_variables_in_expression(self, expression):
+        from robot.api import logger
+        logger.error('handle variables in expression')
         variables = None
         variable_started = False
         tokens = []

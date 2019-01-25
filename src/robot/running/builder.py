@@ -23,7 +23,7 @@ from robot.running.defaults import TestDefaults
 from robot.utils import abspath, is_string, normalize, unic
 from robot.variables import VariableIterator
 
-from .model import ForLoop, Keyword, ResourceFile, TestSuite
+from .model import ForLoop, IfBlock, Keyword, ResourceFile, TestSuite
 
 
 class TestSuiteBuilder(object):
@@ -237,6 +237,8 @@ class StepBuilder(object):
     def _build(self, data, template=None, kw_type='kw'):
         if data.is_for_loop():
             return self._build_for_loop(data, template)
+        if data.is_if_block():
+            return self._build_if_block(data, template)
         if template:
             return self._build_templated_step(data, template)
         return self._build_normal_step(data, kw_type)
@@ -247,6 +249,12 @@ class StepBuilder(object):
                        flavor=data.flavor)
         self.build_steps(loop, data, template)
         return loop
+
+    def _build_if_block(self, data, template):
+        block = IfBlock(condition=data.condition)
+        self.build_steps(block, data, template)
+        return block
+
 
     def _build_templated_step(self, data, template):
         args = data.as_list(include_comment=False)

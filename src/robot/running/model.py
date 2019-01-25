@@ -70,6 +70,8 @@ class ForLoop(Keyword):
     keyword_class = Keyword  #: Internal usage only.
 
     def __init__(self, variables, values, flavor):
+        print(variables)
+        print(values)
         Keyword.__init__(self, assign=variables, args=values,
                          type=Keyword.FOR_LOOP_TYPE)
         self.flavor = flavor
@@ -80,6 +82,22 @@ class ForLoop(Keyword):
 
     @property
     def values(self):
+        return self.args
+
+class IfBlock(Keyword):
+    """Represents an if block in test data.
+
+    Contains keywords in the block body as child :attr:`keywords`.
+    """
+    keyword_class = Keyword  #: Internal usage only.
+
+    def __init__(self, condition):
+
+        Keyword.__init__(self, args=condition,
+                         type=Keyword.IF_BLOCK_TYPE)
+
+    @property
+    def condition(self):
         return self.args
 
 

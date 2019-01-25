@@ -558,6 +558,9 @@ class Variable(object):
     def is_for_loop(self):
         return False
 
+    def is_if_block(self):
+        return False
+
     def has_data(self):
         return bool(self.name or ''.join(self.value))
 
@@ -633,6 +636,29 @@ class TestCase(_WithSteps, _WithSettings):
             steps.append(step)
         return None, []
 
+    def add_if_block(self, declaration, comment=None):
+        self.steps.append(IfBlock(self, declaration, comment))
+        return self.steps[-1]
+
+    def end_if_block(self):
+        loop, steps = self._find_last_empty_if_block_and_steps_after()
+        if not loop:
+            return False
+        loop.steps.extend(steps)
+        self.steps[-len(steps):] = []
+        return True
+
+    def _find_last_empty_if_block_and_steps_after(self):
+        steps = []
+        for step in reversed(self.steps):
+            if isinstance(step, IfBlock):
+                if not step.steps:
+                    steps.reverse()
+                    return step, steps
+                break
+            steps.append(step)
+        return None, []
+
     def report_invalid_syntax(self, message, level='ERROR'):
         type_ = 'test case' if type(self) is TestCase else 'keyword'
         message = "Invalid syntax in %s '%s': %s" % (type_, self.name, message)
@@ -686,6 +712,39 @@ class UserKeyword(TestCase):
             yield element
 
 
+class IfBlock(_WithSteps):
+    def __init__(self, parent, declaration, comment=None):
+        self.parent = parent
+        self.condition = self._get_condition(declaration)
+        self.comment = Comment(comment)
+        self.steps = []
+
+    def _get_condition(self, declaration):
+        if len(declaration) != 1:
+            raise Exception('declaration has wrong number of arguments')
+        condition = declaration[0]
+        return condition
+
+    def is_comment(self):
+        return False
+
+    def is_for_loop(self):
+        return False
+
+    def is_if_block(self):
+        return True
+
+    def as_list(self, indent=False, include_comment=True):
+        comments = self.comment.as_list() if include_comment else []
+        return [': FOR'] + self.vars + [self.flavor] + self.items + comments
+
+    def __iter__(self):
+        return iter(self.steps)
+
+    def is_set(self):
+        return True
+
+
 class ForLoop(_WithSteps):
     """The parsed representation of a for-loop.
 
@@ -734,6 +793,9 @@ class ForLoop(_WithSteps):
     def is_for_loop(self):
         return True
 
+    def is_if_block(self):
+        return False
+
     def as_list(self, indent=False, include_comment=True):
         comments = self.comment.as_list() if include_comment else []
         # TODO: Return 'FOR' in RF 3.2.
@@ -764,6 +826,9 @@ class Step(object):
         return not (self.assign or self.name or self.args)
 
     def is_for_loop(self):
+        return False
+
+    def is_if_block(self):
         return False
 
     def is_set(self):

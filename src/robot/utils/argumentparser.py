@@ -56,7 +56,7 @@ def cmdline2list(args, escaping=False):
     try:
         return [decode(token) for token in lexer]
     except ValueError as err:
-        raise ValueError("Parsing '%s' failed: %s" % (args, err))
+        raise ValueError("Parsing '%s' failed: blah %s" % (args, err))
 
 
 class ArgumentParser(object):

@@ -141,6 +141,7 @@ class FromDirectoryPopulator(object):
             except NoTestsFound:
                 LOGGER.info("Data source '%s' has no tests or tasks." % child)
             except DataError as err:
+                LOGGER.error('i am here')
                 LOGGER.error("Parsing '%s' failed: %s" % (child, err.message))
 
     def _get_include_suites(self, path, incl_suites):
